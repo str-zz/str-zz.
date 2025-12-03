@@ -12,6 +12,6 @@ It comes in handy for healthcare professionals by offering a "starting line" to 
 1. Clone code from repository
 2. Paste onto Text editor
 3. Save the file with the name index.hml
-   - file must end with the >.hml extension
+   - file must end with the .hml extension
 4. Double-click the index.hml file
 
