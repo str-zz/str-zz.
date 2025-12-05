@@ -113,11 +113,18 @@ It uses three different languages: HTML (HyperText Markup Language), CSS (Cascad
             <!-- Result Display -->
             <div id="doseResult" class="bg-secondary-gray p-6 rounded-lg hidden">
                 
-                <!-- NEW Key Results: ML Adjusted Dose -->
+                <!-- NEW Key Results: ML Adjusted Dose Range -->
                 <div class="text-center mb-6 border-b pb-4 border-gray-300">
-                    <p class="text-sm text-gray-600 mb-1 font-medium text-ml-purple">ML Adjusted Total Daily Dose:</p>
-                    <p class="text-5xl font-extrabold text-ml-purple" id="mlDoseOutput">0 mg</p>
-                    <p class="text-xs text-gray-500 mt-1">The total dose after the simulated ML refinement.</p>
+                    <p class="text-sm text-gray-600 mb-1 font-medium text-ml-purple">ML Adjusted Total Daily Dose (Range):</p>
+                    <p class="text-4xl font-extrabold text-ml-purple" id="mlDoseOutput">0 - 0 mg</p>
+                    <p class="text-xs text-gray-500 mt-1">The total dose after the simulated ML refinement, plus/minus the error margin.</p>
+                </div>
+
+                <!-- NEW ML Confidence Score Display -->
+                <div class="text-center mb-6 pb-4 border-gray-300">
+                    <p class="text-sm text-gray-600 mb-1 font-medium text-info-yellow">ML Confidence Score:</p>
+                    <p class="text-3xl font-extrabold text-info-yellow" id="mlConfidenceOutput">0%</p>
+                    <p class="text-xs text-gray-500 mt-1">Simulated confidence based on input values' proximity to ideal ranges.</p>
                 </div>
 
                 <!-- Dose Per Administration -->
@@ -155,10 +162,7 @@ It uses three different languages: HTML (HyperText Markup Language), CSS (Cascad
 
     <script>
         // Global utility function for fetching element values
-        // This function MUST be passed the element's ID.
         const getVal = (id) => document.getElementById(id).value;
-        const getInt = (id) => parseInt(getVal(id));
-        const getFloat = (id) => parseFloat(getVal(id));
         const setHtml = (id, html) => document.getElementById(id).innerHTML = html;
         const show = (id) => document.getElementById(id).classList.remove('hidden');
         const hide = (id) => document.getElementById(id).classList.add('hidden');
@@ -196,21 +200,46 @@ It uses three different languages: HTML (HyperText Markup Language), CSS (Cascad
                 console.error('Error initializing TensorFlow model:', error);
                 // Fallback: continue without ML prediction
                 dosageModel = 'error';
-                document.getElementById('mlDoseOutput').textContent = 'ML Model Failed to Load.';
+                // Update new UI elements with error state
+                setHtml('mlDoseOutput', 'ML Model Failed to Load.');
+                setHtml('mlConfidenceOutput', 'N/A');
             }
         }
 
-        async function calculateDose() {
-            // 1. Get Inputs (Using the correct IDs in getVal)
-            const weightInput = getVal('weightInput'); // This is the string value, e.g., "80"
-            const weightUnit = getVal('weightUnit');
-            const heightInput = getVal('heightInput'); // This is the string value, e.g., "175"
-            const heightUnit = getVal('heightUnit');
-            const dosingFactorInput = getVal('dosingFactor'); // Changed variable name for clarity
-            const frequencyInput = getVal('dosingFrequency'); // Changed variable name for clarity
-            const ageInput = getVal('patientAge'); // This is the string value, e.g., "30"
+        /**
+         * Calculates a normalized deviation (0 to 1) for an input value against an ideal range.
+         * @param {number} value The input number (e.g., weight)
+         * @param {number} min The ideal minimum
+         * @param {number} max The ideal maximum
+         * @returns {number} Deviation score (0 for ideal, 1 for maximum deviation)
+         */
+        const getDeviation = (value, min, max) => {
+            if (value >= min && value <= max) return 0;
 
-            // 2. Input Validation & Parsing (Parsing the string values retrieved above)
+            const mid = (min + max) / 2;
+            let distance;
+            if (value < mid) {
+                distance = min - value;
+            } else {
+                distance = value - max;
+            }
+            
+            // Normalize deviation based on distance outside the range
+            // Max distance (e.g., 50 units outside) = 1.0 deviation
+            return Math.min(1, Math.max(0, distance / 50)); 
+        };
+
+        async function calculateDose() {
+            // 1. Get Inputs
+            const weightInput = getVal('weightInput');
+            const weightUnit = getVal('weightUnit');
+            const heightInput = getVal('heightInput');
+            const heightUnit = getVal('heightUnit');
+            const dosingFactorInput = getVal('dosingFactor');
+            const frequencyInput = getVal('dosingFrequency');
+            const ageInput = getVal('patientAge');
+
+            // 2. Input Validation & Parsing
             const weight = parseFloat(weightInput);
             const height = parseFloat(heightInput);
             const factor = parseFloat(dosingFactorInput);
@@ -240,31 +269,57 @@ It uses three different languages: HTML (HyperText Markup Language), CSS (Cascad
             }
 
             // 4. Core Calculations (Formulaic)
-
             // A. Standard Total Daily Dose (TDD) (Weight-Based)
             const totalDailyDose = weightInKg * factor;
             
-            // C. Body Surface Area (BSA) (Mosteller Formula) - For context/advanced dosing reference
+            // B. Body Surface Area (BSA) (Mosteller Formula)
             let bsa = 0;
             if (weightInKg > 0 && heightInCm > 0) {
                  bsa = Math.sqrt((weightInKg * heightInCm) / 3600);
             }
 
-            // 5. ML Model Prediction (Runs synchronously after model is loaded)
+            // 5. ML Model Prediction and Confidence/Range Simulation
             let adjustedTDD = totalDailyDose;
+            let errorMargin = 0; // Initialize error margin
 
+            // --- Confidence/Accuracy Simulation ---
+            // Define assumed ideal data ranges for lowest error
+            const idealWeightMin = 50; // kg
+            const idealWeightMax = 100; // kg
+            const idealAgeMin = 20; // years
+            const idealAgeMax = 60; // years
+            const idealFactorMin = 10; // mg/kg/day
+            const idealFactorMax = 30; // mg/kg/day
+
+            // Max possible error margin (20% of the dose)
+            const maxErrorPercent = 0.20; 
+            // Base error margin for ideal inputs (5% of the dose)
+            const baseErrorPercent = 0.05; 
+            
+            // Calculate deviation for each key input
+            const weightDeviation = getDeviation(weightInKg, idealWeightMin, idealWeightMax);
+            const ageDeviation = getDeviation(age, idealAgeMin, idealAgeMax);
+            const factorDeviation = getDeviation(factor, idealFactorMin, idealFactorMax);
+
+            // Combine deviations (using weighted average: 40% weight, 30% age, 30% factor)
+            const totalDeviation = (weightDeviation * 0.4) + (ageDeviation * 0.3) + (factorDeviation * 0.3);
+            
+            // Calculate error margin: starts at base and increases with deviation
+            errorMargin = baseErrorPercent + (maxErrorPercent - baseErrorPercent) * totalDeviation; 
+            // Clamp margin between 5% and 20%
+            errorMargin = Math.max(baseErrorPercent, Math.min(maxErrorPercent, errorMargin)); 
+            
+            // Run ML Prediction
             if (dosageModel && dosageModel !== 'error') {
                 // Prepare input tensor: normalize inputs for stable ML performance
-                // Max weight assumed 150kg, Max age assumed 100 years
-                const normalizedWeight = weightInKg / 150; 
-                const normalizedAge = age / 100; 
+                const normalizedWeight = weightInKg / 150; // Max weight assumed 150kg
+                const normalizedAge = age / 100; // Max age assumed 100 years
 
-                // Use tf.tidy to clean up intermediate tensors automatically
                 tf.tidy(() => {
                     const inputTensor = tf.tensor2d([[normalizedWeight, normalizedAge]]);
                     const predictionTensor = dosageModel.predict(inputTensor);
                     
-                    // Get the prediction value (it will be a small number, e.g., 5 to 15)
+                    // Get the prediction value
                     const adjustmentFactor = predictionTensor.dataSync()[0];
 
                     // Apply the factor: ML output * 10 is the adjustment amount in mg
@@ -273,9 +328,15 @@ It uses three different languages: HTML (HyperText Markup Language), CSS (Cascad
             } else if (!dosageModel) {
                 // Initial state while model is loading
                 setHtml('mlDoseOutput', 'Loading ML Model...');
+                setHtml('mlConfidenceOutput', '...');
             }
 
-            // D. Dose Per Administration (Based on ML Adjusted TDD)
+            // --- Range Calculation based on ML Adjusted TDD and Error Margin ---
+            const errorAmount = adjustedTDD * errorMargin;
+            const lowerBound = adjustedTDD - errorAmount;
+            const upperBound = adjustedTDD + errorAmount;
+
+            // D. Dose Per Administration (Uses the midpoint/adjustedTDD)
             const dosePerAdmin = adjustedTDD / freq;
 
 
@@ -284,7 +345,12 @@ It uses three different languages: HTML (HyperText Markup Language), CSS (Cascad
             const roundedTDD = totalDailyDose.toFixed(1);
             const roundedAdminDose = dosePerAdmin.toFixed(1);
             const roundedBSA = bsa.toFixed(2);
-            const roundedAdjustedDose = adjustedTDD.toFixed(1);
+            
+            // Format the range output
+            const rangeOutput = `${lowerBound.toFixed(1)} - ${upperBound.toFixed(1)} mg`;
+
+            // Calculate confidence (1 - errorMargin)
+            const confidenceScore = ((1 - errorMargin) * 100).toFixed(0);
             
             // Update labels based on frequency
             const freqText = freq === 1 ? 'Daily' : `${freq} Times Per Day`;
@@ -294,8 +360,9 @@ It uses three different languages: HTML (HyperText Markup Language), CSS (Cascad
             setHtml('dailyDoseOutput', `${roundedTDD} mg`);
             setHtml('adminDoseOutput', `${roundedAdminDose} mg`);
             setHtml('bsaOutput', `${roundedBSA} m²`);
-            setHtml('mlDoseOutput', `${roundedAdjustedDose} mg`);
-            
+            setHtml('mlDoseOutput', rangeOutput);
+            setHtml('mlConfidenceOutput', `${confidenceScore}%`);
+
             show('doseResult');
         }
 
@@ -303,11 +370,11 @@ It uses three different languages: HTML (HyperText Markup Language), CSS (Cascad
         document.addEventListener('DOMContentLoaded', () => {
             initTfModel(); // Initialize the TensorFlow model
             
-            // Placeholder values for demonstration
+            // Placeholder values for demonstration (High Confidence Example)
             document.getElementById('drugName').value = 'ML Test Drug';
-            document.getElementById('patientAge').value = 30;
-            document.getElementById('weightInput').value = 80;
-            document.getElementById('dosingFactor').value = 15;
+            document.getElementById('patientAge').value = 45; // Ideal range
+            document.getElementById('weightInput').value = 75; // Ideal range
+            document.getElementById('dosingFactor').value = 20; // Ideal range
             document.getElementById('heightInput').value = 175;
             document.getElementById('dosingFrequency').value = 2;
             
