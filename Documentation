@@ -1,1 +1,128 @@
+Topics in Artificial Intelligence for Health & Life Science
+Navya, Melissa, Reagan, Emily
 
+Executive Summary:
+Medical dosing errors are a critical challenge in healthcare, which contributes to approximately 7000-9000 deaths annually in the United States and affecting at least 1.5 million patients per year. The traditional method of one-size fits all dosing doesn’t take into account different patient variability. Our paper presents a precision dosing calculator(Advanced Dosage Estimator) that utilizes patient specific parameters including weight, height, age, and clinical conditions in order to generate personalized medication recommendations (in this case, the amount of dosage of medication). We plan to incorporate pharmacokinetic/pharmacodynamic principles, body surface area calculations, and machine learning enhanced predictions with confidence scoring. By doing so, our product/system removed the implications and gaps surrounding standardized dosing protocols designed for average patients and care that they require.
+
+
+Problem & Clinical Significance: 
+Limitation of “One Size Fits All” Dosing
+The main issue of “One size fits all” dosing is the traditional approach to medication dosing. It relies on standardized protocols which are designed for average patients. This population based method fails to account for the significant variability between the individual patients. Some differences are related to body composition and size because they dramatically affect how drugs are distributed and metabolized. There are also age related factors that affect pediatric, adult, and geriatric populations which process medications at different rates. Another main factor are clinical conditions that affect organ function (particularly the kidney and liver), diseases, etc.
+
+Inadequate Dosing
+There are additional consequences of inadequate dosing. For example, when patients receive standardized doses that don’t fit their unique physiological characteristics, it might lead to two drastic problems. If they were underdosed, it might lead to therapeutic failure, disease progression, and potential development of drug resistance. If they were overdosed, it might result in toxic side effects, adverse drug reactions, organ damage, and potentially even death.
+
+
+
+Why Precision Dosing is important:
+Healthcare providers currently lack accessible, user-friendly tools that can calculate personalized medication dosages at the point of care. While PK/PD principles are well-established in pharmaceutical research, the main problem is in translating these complex models into useful clinical applications. This problem is especially critical in emergency situations, pediatric care, and the treatments of patients with complex past conditions where dosing precision may be more harmful than useful.
+
+
+Key Concepts:
+Personalized Dosing (Precision Medicine)
+The act of adapting drug dosages to each patient’s genetic profile and specific biomarkers
+Switch away from the “one size fits all” population averages
+Produces more benefits and less side effects
+Machine Learning for Dosing
+AI models will analyze patient data (which include weight, age, genetics, organ function) to predict personalized doses
+PKPD Modeling
+Stands for Pharmacokinetics and Pharmacodynamics
+PK looks at how the body affects the drug
+Absorption, Distribution, Metabolism, and Excretion 
+PD looks at how the drug affects the body and produces desired therapeutic effects
+
+Drug development simulation - anything from biological target identification to drug candidate screening
+Precision Medicine and Personalized Therapies:
+Idea: Developing drugs and treatment regimens tailored to an individual's unique genetic profile, biomarkers, and disease characteristics. This is especially relevant in oncology (cancer) where a tumor's specific genetic mutations can determine the most effective treatment.
+Technology: Advanced DNA sequencing, biomarker identification, and pharmacogenomics.
+Dosage and prescription 
+Steps: 
+Modeling to determine the healthiest dose for human clinical trials. 
+Optimization for drug administration
+Taking in information regarding special groups of people, ex; pregnancy, children, organ-impared.
+Looking Towards The Future: Model precision dosing 
+
+
+
+Slideshow deliverables:
+Slide addressing problem (including statistics) - Navya
+Slide explaining idea to solve the problem
+Slide w/ limitations
+current research applications-
+Gemini technical implementation - Melissa
+Slide explaining technical implementation - Melissa
+Other problems the implementation could solve
+Key concepts- Emily
+Future work & other problems- Emily
+
+
+Solution Overview: 
+
+
+Technical Details
+Code link: https://gemini.google.com/share/35d816f6722e.  
+Git repository:
+str-zz/finalstr-zz.: Final Project repository 
+
+The technical components of the web app that is being presented and developed can be split into two sections: Formulaic estimation and a simple neural network model. The formulaic estimation web application was built on a successful gemini.ai generated code, which used three different languages. However, this was not enough to create a model nor did it include any aspect of artificial intelligence (AI) and its subfields. In order to tie the original estimation and machine learning, a subfield of Artificial Intelligence, TensorFlow.js was added to the original code to create an extremely simple, basic version of a neural network, commonly known as a linear regression model. 
+
+The formulaic estimation section of the web application uses mathematical concepts– it is fixed and uses the four core operations: multiplication, division, addition, and subtraction. These calculations create the estimated Total Daily Dose (TDD) that appears when the application is used. On its own, this is not a model nor does it include any branches of artificial intelligence. 
+
+To create a model, TensorFlow.js added, which allows for gemini.ai to integrate a machine learning model within the code without needing nor creating an actual model. With TensorFlow.js	integrated, the code is capable of predicting a “refinement” factor, an attribute found within machine learning models. This was a necessary step because access to patient records is not available, which causes restrictions on the creation of a dataset for the model to be built. 
+
+
+Core calculations
+Total daily dose (mg) = weight (kg) * dosing factor (mg/kg/day)
+Dose per administration = Total daily dose / frequency
+Body surface area = square root [(weight in kg * height in cm)/3600]
+Adjustment factor =  (-5 * Norm Weight) + (10 * Norm Age) + 10
+ML adjusted TDD midpoint = Standard TDD + (Adjustment factor * 10)
+Dose per administration = ML adjusted TDD midpoint / dosing frequency 
+Total deviation = (Weight dev * 0.4) + (Age Dev * 0.3) + (Factor dev * 0.3)
+Error margin = 0.05 + (0.20 - 0.05) * Total dev
+Confidence score = (1- error margin) * 100
+
+
+
+
+
+
+
+
+
+
+How useful it is for the future & how we can improve:
+Expand patient outputs
+Include genetic markers, organ function scores, drug interaction alerts for comprehensive personalized recommendations  
+Generate detailed reports with therapeutic ranges and alternative options
+Improve model accuracy 
+Train on real clinical datasets with actual patient outcomes instead of stimulated data
+Add advanced machine learning methods and validate against pharmacokinetic models and clinical trials
+Enable real time updates
+Develop mobile applications with alert systems 
+Clinical validation
+Partner with healthcare institutions
+Conduct prospective studies comparing standard and AI assisted dosing
+
+
+Reflection Questions:
+How would you determine if the model is working as intended (producing the right outputs for any given input)?
+To determine if the model is working as intended, we would first need to perform mathematical calculations of the expected outputs for different possible cases and compare them to what the model predicted for improved accuracy. Additionally, we would conduct boundary testing by inputting extreme but valid values. Examples could include high or low weights and extreme ages to ensure that the model doesn’t produce doses that are physiologically impossible and may harm the person. 
+
+
+And finally is the system using those inputs to achieve the right outcomes?
+Right now, the system works well as a calculator and shows that we can combine math formulas with machine learning, but we can’t say for sure that it’s achieving the best results for patients because we haven’t tested it with real subjects yet. The system correctly uses the information we give it such as weight, age, height and the math behind it does all the work related to drugs within the body. To really find out if the system works, we would need additional testing in hospitals and clinics with actual patients and track their results. 
+
+
+
+
+
+
+
+
+
+
+Works Cited
+https://pmc.ncbi.nlm.nih.gov/articles/PMC12436579/
+https://www.uspharmacist.com/article/medication-errors-and-liability-issues#:~:text=In%20the%20U.S.%2C%20medication%20errors,result%20of%20a%20medication%20error.&text=Reporting%20of%20medication%20errors%20in,annually%20related%20to%20medication%20errors.&text=Forty%2Done%20percent%20of%20Americans,hospital%2C%20and%20other%20pharmacy%20settings.
+https://www.sciencedirect.com/science/article/pii/S0010482523007941
